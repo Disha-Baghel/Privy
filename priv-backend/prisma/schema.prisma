@@ -11,29 +11,35 @@ datasource db {
   provider = "postgresql"
 }
 
-model Users {
+enum Roles {
+  user
+  admin 
+}
+
+model User {
   id          String    @id @default(uuid())
   name        String
   email       String    @unique
   password    String
+  role        Roles     @default(user)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  sentMessages  Messages[] @relation("sentMessages")
-  receivedMessages  Messages[] @relation("receivedMessages")
+  sentMessages  Message[] @relation("sentMessages")
+  receivedMessages  Message[] @relation("receivedMessages")
 
   @@map("users")
 }
 
-model Messages {
+model Message {
   id                  String    @id @default(uuid())
   senderId            String    
   receiverId          String    
   encryptedContent    String
   createdAt           DateTime  @default(now())
 
-  sender              Users      @relation("sentMessages", fields: [senderId], references: [id])
-  receiver            Users      @relation("receivedMessages", fields: [receiverId], references: [id])
+  sender              User      @relation("sentMessages", fields: [senderId], references: [id])
+  receiver            User      @relation("receivedMessages", fields: [receiverId], references: [id])
 
   @@map("messages")
 }
