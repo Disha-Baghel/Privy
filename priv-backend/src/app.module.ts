@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
+import { RedisModule } from './redis/redis.module';
 import * as Joi from 'joi'
 
 @Module({
@@ -23,7 +24,7 @@ import * as Joi from 'joi'
     PrismaModule, 
     AuthModule, 
     UsersModule, 
-    ChatModule
+    ChatModule, RedisModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,11 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { SendMessageDto } from './chat.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { RequiredRoles } from 'src/auth/decorators/roles.decorator';
+import { Roles } from '@prisma/client';
+import { ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
 
 @Controller('chat')
 export class ChatController {
@@ -9,15 +14,23 @@ export class ChatController {
     ) {}
 
     @Post('send')
-    async sendMessage( @Body() dto: SendMessageDto) {
-        return this.chatService.saveMessage(dto.senderId, dto.receiverId, dto.content)
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @RequiredRoles(Roles.user)
+    @ApiBody({ type: SendMessageDto })
+    async sendMessage(@Req() req, @Body() dto: SendMessageDto) {
+        return this.chatService.saveMessage(req.user.id, dto.receiverId, dto.content)
     }
 
     @Get('history')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @RequiredRoles(Roles.user)
     async getHistory( 
-        @Query('user1') user1: string,
-        @Query('user2') user2: string,
+        @Req() req, 
+        @Query('receiverId') receiverId: string,
     ) {
-        return this.chatService.getMessages(user1, user2);
+        const senderId = req.user.id;
+        return this.chatService.getMessages(senderId, receiverId);
     }
 }

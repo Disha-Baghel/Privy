@@ -7,7 +7,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt'
 export type JwtPayload = {
     role: Roles,
     userId: string,
-    email: string,
 }
 
 @Injectable()

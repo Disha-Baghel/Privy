@@ -53,8 +53,9 @@ export class AuthService {
         const accessToken = await this.jwtService.signAsync({
             role: user.role,
             userId: user.id,
-            email: user.email,
-        });
+        },
+        { expiresIn: '7d'}
+    );
 
         return { accessToken }
     }
