@@ -1,4 +1,27 @@
 services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chat-backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend
+          ignore:
+            - backend/node_modules/
+            - backend/dist/
+    restart: unless-stopped
+
   postgres:
     image: postgres:15
     container_name: priv-postgres
@@ -7,17 +30,41 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: priv-chat
     ports:
+      # Host 5433 if 5432 is already used by another Postgres
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-  
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d priv-chat"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   redis:
     image: redis:7-alpine
-    container_name: priv-redis
+    container_name: chat-redis
     ports:
-      - "6379:6379"
+      # Host 6380 avoids clashing with a local Redis on 6379; inside Docker network still 6379.
+      - "6380:6379"
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  coturn:
+    image: coturn/coturn:4.6.2
+    container_name: chat-coturn
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+    volumes:
+      - ./deploy/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    restart: unless-stopped
 
 volumes:
   pgdata:
